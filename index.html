@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Asset Market Experiment</title>
+<style>
+:root {
+  --bg: #0f0f11;
+  --surface: #18181b;
+  --surface2: #232328;
+  --border: rgba(255,255,255,0.08);
+  --border2: rgba(255,255,255,0.15);
+  --text: #f0eff5;
+  --muted: #888893;
+  --accent: #7f77dd;
+  --accent2: #afa9ec;
+  --green: #1d9e75;
+  --green-l: #9fe1cb;
+  --red: #e24b4a;
+  --red-l: #f7c1c1;
+  --amber: #ef9f27;
+  --amber-l: #fac775;
+  --radius: 10px;
+  --radius-lg: 14px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 15px; }
+.screen { display: none; min-height: 100vh; }
+.screen.active { display: flex; flex-direction: column; }
+#s-landing { align-items: center; justify-content: center; padding: 2rem; }
+.landing-card { background: var(--surface); border: 0.5px solid var(--border2); border-radius: var(--radius-lg); padding: 2.5rem; max-width: 480px; width: 100%; }
+.brand { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent2); margin-bottom: 1rem; }
+.landing-card h1 { font-size: 26px; font-weight: 600; margin-bottom: 0.4rem; }
+.landing-card p { color: var(--muted); font-size: 14px; margin-bottom: 1.5rem; line-height: 1.6; }
+.row { display: flex; gap: 8px; margin-bottom: 0.75rem; }
+input[type=text], input[type=password], input[type=number] {
+  background: var(--bg); border: 0.5px solid var(--border2); border-radius: var(--radius);
+  padding: 10px 14px; color: var(--text); font-size: 14px; outline: none; flex: 1;
+}
+input:focus { border-color: var(--accent); }
+select { background: var(--bg); border: 0.5px solid var(--border2); border-radius: var(--radius); padding: 9px 12px; color: var(--text); font-size: 14px; outline: none; cursor: pointer; }
+.btn { background: var(--accent); color: #fff; border: none; border-radius: var(--radius); padding: 10px 18px; font-size: 14px; font-weight: 500; cursor: pointer; transition: opacity .15s; white-space: nowrap; }
+.btn:hover { opacity: .85; }
+.btn:disabled { opacity: .4; cursor: default; }
+.btn-ghost { background: transparent; color: var(--accent2); border: 0.5px solid var(--border2); }
+.btn-ghost:hover { background: var(--surface2); opacity: 1; }
+.btn-green { background: var(--green); }
+.btn-red { background: var(--red); }
+.btn-sm { padding: 7px 13px; font-size: 13px; }
+hr { border: none; border-top: 0.5px solid var(--border); margin: 1.25rem 0; }
+.err { color: var(--red-l); font-size: 13px; margin-top: 6px; }
+.small-note { font-size: 12px; color: var(--muted); line-height: 1.5; }
+#s-waiting { align-items: center; justify-content: center; text-align: center; }
+.spinner { width: 32px; height: 32px; border: 2px solid var(--border2); border-top-color: var(--accent); border-radius: 50%; animation: spin .9s linear infinite; margin: 0 auto 1rem; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.topbar { background: var(--surface); border-bottom: 0.5px solid var(--border); padding: .875rem 1.25rem; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: space-between; }
+.topbar h2 { font-size: 15px; font-weight: 500; }
+.badge { font-size: 11px; padding: 3px 8px; border-radius: 99px; font-weight: 500; }
+.badge-accent { background: rgba(127,119,221,.2); color: var(--accent2); }
+.phase-pill { padding: 5px 12px; border-radius: 99px; font-size: 13px; font-weight: 500; }
+.phase-base { background: rgba(29,158,117,.15); color: var(--green-l); border: 0.5px solid rgba(29,158,117,.3); }
+.phase-ss { background: rgba(239,159,39,.15); color: var(--amber-l); border: 0.5px solid rgba(239,159,39,.3); }
+.admin-body { display: grid; grid-template-columns: 270px 1fr; flex: 1; overflow: hidden; height: calc(100vh - 55px); }
+.sidebar { background: var(--surface); border-right: 0.5px solid var(--border); padding: 1.1rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1.2rem; }
+.sec-title { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: .6rem; }
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.stat-box { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 9px 11px; }
+.stat-box .v { font-size: 19px; font-weight: 600; }
+.stat-box .l { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.player-list { display: flex; flex-direction: column; gap: 5px; }
+.player-item { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 7px 9px; display: flex; justify-content: space-between; font-size: 12px; }
+.param-grid { display: flex; flex-direction: column; gap: 7px; font-size: 13px; }
+.param-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.param-row label { color: var(--muted); }
+.param-row input { width: 70px; flex: none; padding: 6px 8px; font-size: 13px; }
+.main { overflow-y: auto; padding: 1.25rem; display: flex; flex-direction: column; gap: 1.25rem; }
+.card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1.1rem 1.2rem; }
+.card-title { font-size: 13px; color: var(--muted); font-weight: 400; margin-bottom: .9rem; }
+.controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.ss-box { background: rgba(239,159,39,.07); border: 0.5px solid rgba(239,159,39,.35); border-radius: var(--radius); padding: .9rem 1.1rem; display: none; margin-top: .75rem; }
+.ss-box.show { display: block; }
+.ss-msg { color: var(--amber-l); font-size: 14px; font-weight: 500; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; padding: 5px 8px; color: var(--muted); border-bottom: 0.5px solid var(--border); font-weight: 400; }
+td { padding: 6px 8px; border-bottom: 0.5px solid var(--border); }
+tr:last-child td { border-bottom: none; }
+.buy { color: var(--green-l); font-weight: 500; }
+.sell { color: var(--red-l); font-weight: 500; }
+.price-result { background: var(--bg); border: 0.5px solid var(--border2); border-radius: var(--radius); padding: .9rem 1.1rem; display: flex; gap: 2rem; flex-wrap: wrap; align-items: center; }
+.big-price { font-size: 30px; font-weight: 700; color: var(--accent2); }
+.meta-items { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+.meta-item { font-size: 13px; }
+.meta-item span { color: var(--muted); }
+#chart-wrap { position: relative; height: 200px; width: 100%; }
+.log { font-size: 12px; font-family: monospace; background: var(--bg); border-radius: 6px; padding: .75rem; color: var(--muted); max-height: 110px; overflow-y: auto; white-space: pre; }
+.player-hdr { background: var(--surface); border-bottom: 0.5px solid var(--border); padding: .75rem 1.25rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .5rem; }
+.player-hdr h2 { font-size: 15px; font-weight: 500; }
+.hud { display: flex; gap: 1.25rem; flex-wrap: wrap; }
+.hud-item { font-size: 13px; }
+.hud-item span { color: var(--muted); }
+.player-body { padding: 1rem 1.25rem; display: flex; flex-direction: column; gap: 1rem; flex: 1; }
+.ss-player { background: var(--surface2); border: 0.5px solid rgba(239,159,39,.4); border-radius: var(--radius); padding: 1rem; display: none; text-align: center; }
+.ss-player.show { display: block; }
+.ss-icon { font-size: 26px; margin-bottom: .4rem; }
+.ss-player p { color: var(--amber-l); font-size: 14px; }
+.order-row { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; }
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field label { font-size: 12px; color: var(--muted); }
+.field input { width: 80px; flex: none; }
+.hint { font-size: 12px; color: var(--muted); margin-top: 5px; }
+.pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.pill { display: inline-flex; align-items: center; gap: 5px; background: var(--surface2); border-radius: 99px; padding: 4px 11px; font-size: 13px; }
+.waiting-inner { text-align: center; padding: 2rem; display: flex; flex-direction: column; align-items: center; gap: .5rem; }
+.waiting-inner p { color: var(--muted); font-size: 14px; }
+.result-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+.res-box { background: var(--surface2); border-radius: var(--radius); padding: .9rem 1rem; min-width: 110px; }
+.res-box strong { display: block; font-size: 20px; font-weight: 600; }
+.res-box span { font-size: 11px; color: var(--muted); }
+.text-accent { color: var(--accent2); }
+.text-green { color: var(--green-l); }
+.text-red { color: var(--red-l); }
+.text-amber { color: var(--amber-l); }
+@media (max-width: 880px) {
+  .admin-body { grid-template-columns: 1fr; height: auto; }
+  .sidebar { border-right: none; border-bottom: 0.5px solid var(--border); }
+}
+</style>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div id="s-landing" class="screen active">
+  <div class="landing-card">
+    <div class="brand">Econ Lab</div>
+    <h1>Asset Market</h1>
+    <p>Students join with their display name and participant code. The researcher signs in below to run the market live.</p>
+    <div class="row">
+      <input type="text" id="inp-name" placeholder="Student name" maxlength="30">
+      <input type="text" id="inp-code" placeholder="Code (ex. P01)" maxlength="10" style="max-width:120px;flex:none;">
+    </div>
+    <div class="row">
+      <button class="btn" onclick="joinPlayer()">Join experiment</button>
+    </div>
+    <div id="join-err" class="err" style="display:none"></div>
+    <p class="small-note">Example participant codes: {{ default_codes }}</p>
+    <hr>
+    <div class="row">
+      <input type="password" id="inp-pw" placeholder="Researcher password...">
+      <button class="btn btn-ghost" onclick="loginAdmin()">Admin</button>
+    </div>
+    <div id="admin-err" class="err" style="display:none"></div>
+    <p class="small-note">Default admin password: <code style="background:var(--surface2);padding:1px 5px;border-radius:4px;">{{ admin_password_hint }}</code></p>
+    <div id="conn-status" style="font-size:12px;color:var(--muted);margin-top:12px;">Connecting...</div>
+  </div>
+</div>
+
+<div id="s-waiting" class="screen">
+  <div>
+    <div class="spinner"></div>
+    <p style="color:var(--muted);font-size:14px;" id="wait-msg">Waiting for the researcher to start the next round...</p>
+  </div>
+</div>
+
+<div id="s-admin" class="screen">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <h2>Researcher Console</h2>
+      <span class="badge badge-accent">Admin</span>
+      <span id="phase-pill" class="phase-pill phase-base">Baseline Phase</span>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+      <span id="round-stat" style="font-size:13px;color:var(--muted);">Round 0 / 10</span>
+      <button class="btn btn-sm btn-ghost" onclick="exportCSV()">Export CSV</button>
+      <button class="btn btn-sm btn-red" onclick="adminReset()">Reset</button>
+    </div>
+  </div>
+  <div class="admin-body">
+    <div class="sidebar">
+      <div>
+        <div class="sec-title">Market Stats</div>
+        <div class="stat-grid">
+          <div class="stat-box"><div class="v" id="st-players">0</div><div class="l">Players</div></div>
+          <div class="stat-box"><div class="v" id="st-round">0</div><div class="l">Round</div></div>
+          <div class="stat-box"><div class="v text-accent" id="st-price">—</div><div class="l">Last Price</div></div>
+          <div class="stat-box"><div class="v text-green" id="st-fv">—</div><div class="l">Fund. Value</div></div>
+        </div>
+      </div>
+      <div>
+        <div class="sec-title">Players</div>
+        <div class="player-list" id="player-list"><p style="font-size:13px;color:var(--muted);">None yet.</p></div>
+      </div>
+      <div>
+        <div class="sec-title">Parameters</div>
+        <div class="param-grid">
+          <div class="param-row"><label>Total rounds</label><input type="number" id="p-rounds" value="10" min="4" max="20"></div>
+          <div class="param-row"><label>Screenshot starts at round</label><input type="number" id="p-ss-round" value="6" min="2" max="20"></div>
+          <div class="param-row"><label>Dividend / round ($)</label><input type="number" id="p-div" value="0.50" step="0.1" min="0"></div>
+          <div class="param-row"><label>Final redemption ($)</label><input type="number" id="p-redeem" value="3.00" step="0.5" min="0"></div>
+          <div class="param-row"><label>Interest rate (%)</label><input type="number" id="p-int" value="5" min="0" max="100"></div>
+          <div class="param-row"><label>Start cash ($)</label><input type="number" id="p-cash" value="20" min="1"></div>
+          <div class="param-row"><label>Start units</label><input type="number" id="p-units" value="4" min="0"></div>
+        </div>
+      </div>
+    </div>
+    <div class="main">
+      <div class="card">
+        <div class="card-title">Round Control</div>
+        <div class="controls">
+          <button class="btn" id="btn-start" onclick="adminStartRound()">Start Round 1</button>
+          <button class="btn btn-green" id="btn-clear" onclick="adminClear()" disabled>Clear Market & Advance</button>
+          <button class="btn btn-ghost btn-sm" onclick="adminToggleSS()">Toggle Screenshot Phase</button>
+          <a class="btn btn-ghost btn-sm" href="/export/full_results.csv" target="_blank" rel="noopener">Full export</a>
+        </div>
+        <div id="ss-box" class="ss-box"><span class="ss-msg" id="ss-msg-text"></span></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Live Orders This Round</div>
+        <div class="table-wrap"><div id="orders-display" style="font-size:13px;color:var(--muted);">No orders yet.</div></div>
+      </div>
+      <div class="card" id="result-card" style="display:none">
+        <div class="card-title">Clearing Result</div>
+        <div class="price-result">
+          <div>
+            <div style="font-size:12px;color:var(--muted)">Clearing Price</div>
+            <div class="big-price" id="res-price">$—</div>
+          </div>
+          <div class="meta-items">
+            <div class="meta-item"><span>Fund. Value </span><strong id="res-fv">—</strong></div>
+            <div class="meta-item"><span>Deviation </span><strong id="res-dev">—</strong></div>
+            <div class="meta-item"><span>Volume </span><strong id="res-vol">—</strong></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Price vs Fundamental Value</div>
+        <div id="chart-wrap"><canvas id="myChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Round Log</div>
+        <div class="log" id="data-log">Round,Phase,ClearPrice,FundValue,Deviation,Volume
+</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="s-player" class="screen">
+  <div class="player-hdr">
+    <h2 id="p-greeting">Player</h2>
+    <div class="hud">
+      <div class="hud-item"><span>Cash </span><strong id="h-cash">$—</strong></div>
+      <div class="hud-item"><span>Units </span><strong id="h-units">—</strong></div>
+      <div class="hud-item"><span>Round </span><strong id="h-round">—</strong></div>
+      <div class="hud-item"><span>Fund. Value </span><strong id="h-fv" class="text-green">—</strong></div>
+    </div>
+  </div>
+  <div class="player-body">
+    <div class="ss-player" id="ss-player-box">
+      <div class="ss-icon">📸</div>
+      <p id="ss-player-msg"></p>
+    </div>
+    <div class="card" id="order-panel">
+      <div class="card-title">Submit Your Order</div>
+      <div class="order-row">
+        <div class="field">
+          <label>Action</label>
+          <select id="o-type"><option value="buy">Buy</option><option value="sell">Sell</option></select>
+        </div>
+        <div class="field">
+          <label>Quantity</label>
+          <input type="number" id="o-qty" value="1" min="1" max="20">
+        </div>
+        <div class="field">
+          <label>Limit Price ($)</label>
+          <input type="number" id="o-price" value="5.00" min="0.01" step="0.01">
+        </div>
+        <button class="btn" onclick="submitOrder()">Submit</button>
+      </div>
+      <p class="hint" id="fv-hint">Fundamental value: calculating...</p>
+      <div class="pills" id="my-orders"></div>
+      <div id="order-err" class="err" style="display:none"></div>
+    </div>
+    <div class="waiting-inner" id="p-waiting" style="display:none">
+      <div class="spinner"></div>
+      <p>Order submitted — waiting for market to clear...</p>
+    </div>
+    <div class="card" id="p-result" style="display:none">
+      <div class="card-title">Round Result</div>
+      <div class="result-grid">
+        <div class="res-box"><span>Clearing price</span><strong class="text-accent" id="pr-price">—</strong></div>
+        <div class="res-box"><span>Your trades</span><strong id="pr-trades">—</strong></div>
+        <div class="res-box"><span>Cash</span><strong id="pr-cash">—</strong></div>
+        <div class="res-box"><span>Units</span><strong id="pr-units">—</strong></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+const WS_URL = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws';
+let ws;
+let myName = null;
+let myRole = null;
+let adminState = null;
+let chart = null;
+
+function connect() {
+  ws = new WebSocket(WS_URL);
+  ws.onopen = () => {
+    const el = document.getElementById('conn-status');
+    el.textContent = 'Connected ✓';
+    el.style.color = '#9fe1cb';
+  };
+  ws.onclose = () => {
+    const el = document.getElementById('conn-status');
+    el.textContent = 'Disconnected — reconnecting...';
+    el.style.color = '#fac775';
+    setTimeout(connect, 2000);
+  };
+  ws.onmessage = (e) => handleMessage(JSON.parse(e.data));
+}
+
+function send(obj) {
+  if (ws && ws.readyState === 1) ws.send(JSON.stringify(obj));
+}
+
+function handleMessage(msg) {
+  if (msg.type === 'AUTH_OK') {
+    myRole = msg.role;
+    showScreen('s-admin');
+    initChart();
+  } else if (msg.type === 'AUTH_FAIL') {
+    showErr('admin-err', 'Wrong password.');
+  } else if (msg.type === 'JOIN_OK') {
+    myName = msg.name;
+    myRole = 'player';
+    document.getElementById('p-greeting').textContent = 'Player: ' + myName;
+    updateHUD(msg.cash, msg.units, null, null);
+    showScreen('s-waiting');
+    document.getElementById('wait-msg').textContent = 'Joined! Waiting for the researcher to start a round...';
+  } else if (msg.type === 'JOIN_FAIL') {
+    showErr('join-err', msg.reason);
+  } else if (msg.type === 'ADMIN_STATE') {
+    adminState = msg.state;
+    renderAdminState();
+  } else if (msg.type === 'ROUND_START') {
+    if (myRole === 'player') {
+      showScreen('s-player');
+      document.getElementById('h-round').textContent = msg.round + ' / ' + msg.totalRounds;
+      document.getElementById('h-fv').textContent = '$' + msg.fv.toFixed(2);
+      document.getElementById('fv-hint').textContent = 'Fundamental value this round: $' + msg.fv.toFixed(2);
+      document.getElementById('order-panel').style.display = 'block';
+      document.getElementById('p-waiting').style.display = 'none';
+      document.getElementById('p-result').style.display = 'none';
+      document.getElementById('ss-player-box').classList.remove('show');
+      document.getElementById('my-orders').innerHTML = '';
+      document.getElementById('order-err').style.display = 'none';
+      if (msg.isScreenshotPhase && msg.screenshotMsg) {
+        document.getElementById('ss-player-box').classList.add('show');
+        document.getElementById('ss-player-msg').textContent = msg.screenshotMsg;
+      }
+    }
+  } else if (msg.type === 'PORTFOLIO_UPDATE') {
+    updateHUD(msg.cash, msg.units, null, null);
+  } else if (msg.type === 'ORDER_ACK') {
+    const o = msg.order;
+    document.getElementById('my-orders').innerHTML = `<span class="pill"><span class="${o.type === 'buy' ? 'buy' : 'sell'}">${o.type.toUpperCase()}</span> ${o.qty}x @ $${o.price.toFixed(2)}</span>`;
+    document.getElementById('order-panel').style.display = 'none';
+    document.getElementById('p-waiting').style.display = 'flex';
+  } else if (msg.type === 'ORDER_FAIL') {
+    showErr('order-err', msg.reason);
+  } else if (msg.type === 'ROUND_RESULT' && myRole === 'player') {
+    document.getElementById('p-waiting').style.display = 'none';
+    document.getElementById('order-panel').style.display = 'none';
+    if (msg.ssMsg) {
+      document.getElementById('ss-player-box').classList.add('show');
+      document.getElementById('ss-player-msg').textContent = msg.ssMsg;
+    }
+    document.getElementById('p-result').style.display = 'block';
+    document.getElementById('pr-price').textContent = '$' + msg.clearPrice.toFixed(2);
+    const tradeText = msg.bought > 0 ? `Bought ${msg.bought}` : msg.sold > 0 ? `Sold ${msg.sold}` : 'No fills';
+    document.getElementById('pr-trades').textContent = tradeText;
+    document.getElementById('pr-cash').textContent = '$' + msg.cash.toFixed(2);
+    document.getElementById('pr-units').textContent = msg.units;
+    updateHUD(msg.cash, msg.units, null, null);
+  } else if (msg.type === 'RESET') {
+    location.reload();
+  }
+}
+
+function renderAdminState() {
+  if (!adminState) return;
+  const s = adminState;
+  const pill = document.getElementById('phase-pill');
+  pill.textContent = s.isScreenshotPhase ? 'Screenshot Phase' : 'Baseline Phase';
+  pill.className = 'phase-pill ' + (s.isScreenshotPhase ? 'phase-ss' : 'phase-base');
+  document.getElementById('round-stat').textContent = 'Round ' + s.currentRound + ' / ' + s.totalRounds;
+  document.getElementById('st-players').textContent = Object.keys(s.players).length;
+  document.getElementById('st-round').textContent = s.currentRound;
+  const last = s.roundHistory[s.roundHistory.length - 1];
+  document.getElementById('st-price').textContent = last ? '$' + last.price.toFixed(2) : '—';
+  document.getElementById('st-fv').textContent = last ? '$' + last.fv.toFixed(2) : '—';
+
+  const pl = document.getElementById('player-list');
+  const entries = Object.entries(s.players);
+  pl.innerHTML = entries.length ? entries.map(([n, p]) =>
+    `<div class="player-item"><span style="font-weight:500">${n} <span style="color:var(--muted)">(${p.code})</span></span><span style="color:var(--muted)">$${p.cash.toFixed(2)} | ${p.units}u</span></div>`
+  ).join('') : '<p style="font-size:13px;color:var(--muted)">None yet.</p>';
+
+  const od = document.getElementById('orders-display');
+  if (s.allOrders.length === 0) {
+    od.textContent = 'No orders yet.';
+    od.style.color = 'var(--muted)';
+  } else {
+    od.style.color = '';
+    od.innerHTML = `<table><thead><tr><th>Player</th><th>Type</th><th>Qty</th><th>Price</th></tr></thead><tbody>${
+      s.allOrders.map(o => `<tr><td>${o.player}</td><td class="${o.type}">${o.type.toUpperCase()}</td><td>${o.qty}</td><td>$${o.price.toFixed(2)}</td></tr>`).join('')
+    }</tbody></table>`;
+  }
+
+  if (s.lastScreenshotMsg) {
+    document.getElementById('ss-box').classList.add('show');
+    document.getElementById('ss-msg-text').textContent = s.lastScreenshotMsg;
+  } else {
+    document.getElementById('ss-box').classList.remove('show');
+  }
+
+  if (last) {
+    document.getElementById('result-card').style.display = 'block';
+    document.getElementById('res-price').textContent = '$' + last.price.toFixed(2);
+    document.getElementById('res-fv').textContent = '$' + last.fv.toFixed(2);
+    document.getElementById('res-dev').textContent = (last.dev >= 0 ? '+' : '') + last.dev.toFixed(2);
+    document.getElementById('res-vol').textContent = last.volume + ' units';
+  }
+
+  const canStart = !s.roundOpen && s.currentRound < s.totalRounds;
+  const btnStart = document.getElementById('btn-start');
+  btnStart.textContent = s.currentRound === 0 ? 'Start Round 1' : canStart ? 'Start Round ' + (s.currentRound + 1) : s.currentRound >= s.totalRounds ? 'Experiment Complete' : 'Round Open...';
+  btnStart.disabled = !canStart || s.currentRound >= s.totalRounds;
+  document.getElementById('btn-clear').disabled = !s.roundOpen;
+  document.getElementById('p-rounds').value = s.totalRounds;
+  document.getElementById('p-ss-round').value = s.screenshotStartRound;
+  document.getElementById('p-div').value = s.dividend;
+  document.getElementById('p-redeem').value = s.redemption;
+  document.getElementById('p-int').value = Math.round(s.interestRate * 100);
+  document.getElementById('p-cash').value = s.startCash;
+  document.getElementById('p-units').value = s.startUnits;
+  const header = 'Round,Phase,ClearPrice,FundValue,Deviation,Volume\n';
+  document.getElementById('data-log').textContent = header + s.roundHistory.map(r => `${r.round},${r.phase},${r.price.toFixed(2)},${r.fv.toFixed(2)},${r.dev.toFixed(2)},${r.volume}`).join('\n');
+  updateChart(s.roundHistory);
+}
+
+function adminStartRound() {
+  send({
+    type: 'ADMIN_START_ROUND',
+    totalRounds: parseInt(document.getElementById('p-rounds').value),
+    screenshotStartRound: parseInt(document.getElementById('p-ss-round').value),
+    dividend: parseFloat(document.getElementById('p-div').value),
+    redemption: parseFloat(document.getElementById('p-redeem').value),
+    interestRate: parseFloat(document.getElementById('p-int').value) / 100,
+    startCash: parseFloat(document.getElementById('p-cash').value),
+    startUnits: parseInt(document.getElementById('p-units').value)
+  });
+}
+function adminClear() { send({ type: 'ADMIN_CLEAR' }); }
+function adminToggleSS() { send({ type: 'ADMIN_TOGGLE_SCREENSHOT' }); }
+function adminReset() { if (confirm('Reset everything? All data will be lost.')) send({ type: 'ADMIN_RESET' }); }
+
+function exportCSV() {
+  if (!adminState) return;
+  const header = 'Round,Phase,ClearPrice,FundValue,Deviation,Volume\n';
+  const rows = adminState.roundHistory.map(r => `${r.round},${r.phase},${r.price.toFixed(2)},${r.fv.toFixed(2)},${r.dev.toFixed(2)},${r.volume}`).join('\n');
+  const blob = new Blob([header + rows], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'round_summary.csv';
+  a.click();
+}
+
+function joinPlayer() {
+  const name = document.getElementById('inp-name').value.trim();
+  const code = document.getElementById('inp-code').value.trim().toUpperCase();
+  if (!name || !code) {
+    showErr('join-err', 'Please enter both your name and participant code.');
+    return;
+  }
+  hideErr('join-err');
+  send({ type: 'PLAYER_JOIN', name, code });
+}
+function loginAdmin() {
+  hideErr('admin-err');
+  send({ type: 'ADMIN_LOGIN', password: document.getElementById('inp-pw').value });
+}
+function submitOrder() {
+  const orderType = document.getElementById('o-type').value;
+  const qty = parseInt(document.getElementById('o-qty').value);
+  const price = parseFloat(document.getElementById('o-price').value);
+  if (!qty || !price || price <= 0) {
+    showErr('order-err', 'Invalid order.');
+    return;
+  }
+  hideErr('order-err');
+  send({ type: 'SUBMIT_ORDER', orderType, qty, price });
+}
+
+function initChart() {
+  if (chart) return;
+  const ctx = document.getElementById('myChart').getContext('2d');
+  chart = new Chart(ctx, {
+    type: 'line',
+    data: { labels: [], datasets: [
+      { label: 'Market Price', data: [], borderColor: '#afa9ec', backgroundColor: 'rgba(175,169,236,.1)', tension: .3, pointRadius: 4, fill: true },
+      { label: 'Fundamental Value', data: [], borderColor: '#1d9e75', borderDash: [5,4], tension: .3, pointRadius: 3, fill: false }
+    ]},
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#888893', font: { size: 12 } } }, tooltip: { mode: 'index' } },
+      scales: {
+        x: { ticks: { color: '#888893' }, grid: { color: 'rgba(255,255,255,.05)' } },
+        y: { ticks: { color: '#888893', callback: v => '$' + Number(v).toFixed(2) }, grid: { color: 'rgba(255,255,255,.05)' } }
+      }
+    }
+  });
+}
+function updateChart(history) {
+  if (!chart) return;
+  chart.data.labels = history.map(r => 'R' + r.round);
+  chart.data.datasets[0].data = history.map(r => r.price);
+  chart.data.datasets[1].data = history.map(r => r.fv);
+  chart.update();
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function updateHUD(cash, units, round, fv) {
+  if (cash !== null) document.getElementById('h-cash').textContent = '$' + cash.toFixed(2);
+  if (units !== null) document.getElementById('h-units').textContent = units;
+  if (round !== null) document.getElementById('h-round').textContent = round;
+  if (fv !== null) document.getElementById('h-fv').textContent = '$' + fv.toFixed(2);
+}
+function showErr(id, msg) { const e = document.getElementById(id); e.textContent = msg; e.style.display = 'block'; }
+function hideErr(id) { document.getElementById(id).style.display = 'none'; }
+
+document.getElementById('inp-name').addEventListener('keydown', e => { if (e.key === 'Enter') joinPlayer(); });
+document.getElementById('inp-code').addEventListener('keydown', e => { if (e.key === 'Enter') joinPlayer(); });
+document.getElementById('inp-pw').addEventListener('keydown', e => { if (e.key === 'Enter') loginAdmin(); });
+connect();
+</script>
+</body>
+</html>
